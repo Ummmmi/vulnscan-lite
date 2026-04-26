@@ -37,8 +37,6 @@ Only scan websites you own. This tool performs **passive analysis only** — no 
 | Deploy | Netlify (frontend), Render (backend) |
 
 ---
-
- Project Structure
 vulnscan-lite/
 ├── backend/
 │   └── app/
@@ -57,7 +55,6 @@ vulnscan-lite/
 │   ├── ScanPage.jsx    # Scanner UI
 │   └── ScanResult.jsx  # Results UI
 └── App.jsx
-
 ---
 
   Scanning Logic
