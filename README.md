@@ -36,26 +36,29 @@ Only scan websites you own. This tool performs **passive analysis only** — no 
 | Queue | Celery + Redis |
 | Deploy | Netlify (frontend), Render (backend) |
 
----
+## Project Structure
+
+```text
 vulnscan-lite/
 ├── backend/
 │   └── app/
 │       ├── scanner/
-│       │   ├── headers.py      # Header analysis module
-│       │   ├── ssl_check.py    # SSL/TLS inspection module
-│       │   ├── cms.py          # CMS detection module
-│       │   └── main_scan.py    # Master scanner
-│       ├── main.py             # FastAPI app
-│       ├── database.py         # PostgreSQL connection
-│       ├── models.py           # SQLAlchemy models
+│       │   ├── headers.py       # Header analysis module
+│       │   ├── ssl_check.py     # SSL/TLS inspection module
+│       │   ├── cms.py           # CMS detection module
+│       │   └── main_scan.py     # Master scanner
+│       ├── main.py              # FastAPI app
+│       ├── database.py          # PostgreSQL connection
+│       ├── models.py            # SQLAlchemy models
 │       └── requirements.txt
+│
 └── frontend/
-└── src/
-├── pages/
-│   ├── ScanPage.jsx    # Scanner UI
-│   └── ScanResult.jsx  # Results UI
-└── App.jsx
----
+    └── src/
+        ├── pages/
+        │   ├── ScanPage.jsx     # Scanner UI
+        │   └── ScanResult.jsx   # Results UI
+        └── App.jsx
+```
 
   Scanning Logic
 
