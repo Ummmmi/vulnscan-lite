@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ScanPage from './pages/ScanPage';
 import ScanResult from './pages/ScanResult';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://vulnscan-lite-x5ut.onrender.com';
 
 function App() {
   const [result, setResult]       = useState(null);
