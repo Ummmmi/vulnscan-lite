@@ -22,21 +22,35 @@ const SECURITY_FACTS = [
 ];
 
 function ScanPage({ onResult }) {
-  const [url, setUrl]           = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [steps, setSteps]       = useState([]);
-  const [error, setError]       = useState(null);
-  const [progress, setProgress] = useState(0);
+  const [url, setUrl]             = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [steps, setSteps]         = useState([]);
+  const [error, setError]         = useState(null);
+  const [progress, setProgress]   = useState(0);
   const [factIndex, setFactIndex] = useState(0);
+  const [scanDone, setScanDone]   = useState(false);
+  const [pendingResult, setPendingResult] = useState(null);
 
-  // Rotate facts every 2 seconds while loading
+  // Facts rotate karo — 4 seconds per fact
   useEffect(() => {
     if (!loading) return;
     const interval = setInterval(() => {
       setFactIndex(prev => (prev + 1) % SECURITY_FACTS.length);
-    }, 2000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [loading]);
+
+  // Jab dono complete ho — backend + animation — result dikhao
+  useEffect(() => {
+    if (scanDone && pendingResult && progress >= 100) {
+      setTimeout(() => {
+        setLoading(false);
+        onResult(pendingResult);
+        setScanDone(false);
+        setPendingResult(null);
+      }, 500);
+    }
+  }, [scanDone, pendingResult, progress]);
 
   const handleScan = async () => {
     if (!url) return;
@@ -44,37 +58,55 @@ function ScanPage({ onResult }) {
     setSteps([]);
     setError(null);
     setProgress(0);
+    setScanDone(false);
+    setPendingResult(null);
     setFactIndex(Math.floor(Math.random() * SECURITY_FACTS.length));
 
-    SCAN_STEPS.forEach((step, i) => {
-      setTimeout(() => {
-        setSteps(prev => [...prev, step]);
-        setProgress(Math.round(((i + 1) / SCAN_STEPS.length) * 100));
-      }, i * 700);
-    });
+    // Animation steps — 1 step har 3 seconds
+    // Agar backend slow hai toh steps repeat hote rahenge
+    let stepIndex = 0;
+    const stepInterval = setInterval(() => {
+      const step = SCAN_STEPS[Math.min(stepIndex, SCAN_STEPS.length - 1)];
+      setSteps(prev => {
+        // Last step repeat mat karo
+        if (prev.length > 0 && prev[prev.length - 1] === SCAN_STEPS[SCAN_STEPS.length - 1]) {
+          return prev;
+        }
+        if (stepIndex < SCAN_STEPS.length) {
+          return [...prev, step];
+        }
+        return prev;
+      });
+      setProgress(Math.min(
+        Math.round(((Math.min(stepIndex + 1, SCAN_STEPS.length)) / SCAN_STEPS.length) * 95),
+        95
+      ));
+      stepIndex++;
+    }, 3000);
 
     try {
-const res = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
+      const res  = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ url }),
       });
       const data = await res.json();
 
+      clearInterval(stepInterval);
+
       if (data.status === 'complete' && data.result) {
-        const animationTime = SCAN_STEPS.length * 700 + 500;
-        setTimeout(() => {
-          setLoading(false);
-          onResult(data.result);
-        }, animationTime);
+        // Show all steps complete
+        setSteps(SCAN_STEPS);
+        setProgress(100);
+        setScanDone(true);
+        setPendingResult(data.result);
       } else {
-        setTimeout(() => {
-          setLoading(false);
-          setError(data.error || 'Scan failed. Try again.');
-        }, SCAN_STEPS.length * 700);
+        setLoading(false);
+        setError(data.error || 'Scan failed. Try again.');
       }
 
     } catch (e) {
+      clearInterval(stepInterval);
       setLoading(false);
       setError('Failed to connect to backend. Is it running?');
     }
@@ -126,6 +158,15 @@ const res = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
         </button>
       </div>
 
+      {/* Cold start warning */}
+      {loading && steps.length === 0 && (
+        <div style={{
+          color: '#555', fontSize: '13px', marginBottom: '12px'
+        }}>
+          ⏳ Waking up server... first scan may take 30-50 seconds
+        </div>
+      )}
+
       {/* Progress Steps */}
       {steps.length > 0 && (
         <div style={{
@@ -154,12 +195,12 @@ const res = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
             <div style={{
               height: '100%', width: `${progress}%`,
               background: '#00ff88', borderRadius: '2px',
-              transition: 'width 0.5s ease',
+              transition: 'width 1s ease',
               boxShadow: '0 0 8px #00ff88'
             }} />
           </div>
 
-          {/* Security Fact — shown while scanning */}
+          {/* Security Fact */}
           {loading && (
             <div style={{
               marginTop    : '16px',
@@ -171,11 +212,7 @@ const res = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
               alignItems   : 'flex-start',
               gap          : '10px',
             }}>
-              <span style={{
-                fontSize   : '16px',
-                flexShrink : 0,
-                marginTop  : '1px'
-              }}>💡</span>
+              <span style={{ fontSize: '16px', flexShrink: 0, marginTop: '1px' }}>💡</span>
               <div>
                 <div style={{
                   fontSize     : '10px',
@@ -191,7 +228,6 @@ const res = await fetch('https://vulnscan-lite-x5ut.onrender.com/api/scan', {
                   fontSize  : '13px',
                   color     : '#888',
                   lineHeight: '1.5',
-                  transition: 'opacity 0.3s ease',
                 }}>
                   {SECURITY_FACTS[factIndex]}
                 </div>
